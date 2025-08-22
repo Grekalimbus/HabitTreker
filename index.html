@@ -4,17 +4,43 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Трекер Привычек</title>
+
+		<!-- Google Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+			rel="stylesheet"
+		/>
+
+		<!-- Font Awesome Icons -->
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+		/>
+
 		<link rel="stylesheet" href="style.css" />
 	</head>
 	<body>
 		<div class="app">
 			<!-- Заголовок -->
 			<header class="header">
-				<h1>Трекер Привычек</h1>
-				<div class="user-stats">
-					<div class="level-info">
-						<span class="level-badge" id="levelBadge">Новичок</span>
-						<span class="experience" id="totalExperience">0 XP</span>
+				<div class="header-content">
+					<div class="logo">
+						<i class="fas fa-leaf logo-icon"></i>
+						<h1>Трекер Привычек</h1>
+					</div>
+					<div class="user-stats">
+						<div class="level-info">
+							<div class="level-badge" id="levelBadge">
+								<i class="fas fa-medal"></i>
+								<span>Новичок</span>
+							</div>
+							<div class="experience-bar">
+								<div class="experience-fill" id="experienceFill"></div>
+								<span class="experience-text" id="totalExperience">0 XP</span>
+							</div>
+						</div>
 					</div>
 				</div>
 			</header>
@@ -22,9 +48,17 @@
 			<!-- Навигация по вкладкам -->
 			<nav class="tabs">
 				<button class="tab-btn active" data-tab="active">
-					Активные привычки
+					<i class="fas fa-check-circle"></i>
+					<span>Активные привычки</span>
 				</button>
-				<button class="tab-btn" data-tab="backlog">Беклог</button>
+				<button class="tab-btn" data-tab="backlog">
+					<i class="fas fa-list"></i>
+					<span>Беклог</span>
+				</button>
+				<button class="tab-btn" data-tab="statistics">
+					<i class="fas fa-chart-bar"></i>
+					<span>Статистика</span>
+				</button>
 			</nav>
 
 			<!-- Вкладка активных привычек -->
@@ -32,7 +66,8 @@
 				<div class="habits-container">
 					<div class="add-habit-section">
 						<button class="add-habit-btn" id="addHabitBtn">
-							<span>+</span> Добавить привычку
+							<i class="fas fa-plus"></i>
+							<span>Добавить привычку</span>
 						</button>
 					</div>
 
@@ -47,7 +82,8 @@
 				<div class="backlog-container">
 					<div class="add-habit-section">
 						<button class="add-habit-btn" id="addBacklogBtn">
-							<span>+</span> Добавить в беклог
+							<i class="fas fa-plus"></i>
+							<span>Добавить в беклог</span>
 						</button>
 					</div>
 
@@ -57,16 +93,99 @@
 				</div>
 			</div>
 
+			<!-- Вкладка статистики -->
+			<div class="tab-content" id="statisticsTab">
+				<div class="statistics-container">
+					<div class="stats-overview">
+						<div class="stat-card">
+							<div class="stat-icon">
+								<i class="fas fa-fire"></i>
+							</div>
+							<div class="stat-content">
+								<h3>Текущий стрик</h3>
+								<div class="stat-value" id="overallCurrentStreak">0</div>
+							</div>
+						</div>
+
+						<div class="stat-card">
+							<div class="stat-icon">
+								<i class="fas fa-trophy"></i>
+							</div>
+							<div class="stat-content">
+								<h3>Максимальный стрик</h3>
+								<div class="stat-value" id="overallMaxStreak">0</div>
+							</div>
+						</div>
+
+						<div class="stat-card">
+							<div class="stat-icon">
+								<i class="fas fa-calendar-check"></i>
+							</div>
+							<div class="stat-content">
+								<h3>Всего дней</h3>
+								<div class="stat-value" id="overallTotalDays">0</div>
+							</div>
+						</div>
+
+						<div class="stat-card">
+							<div class="stat-icon">
+								<i class="fas fa-percentage"></i>
+							</div>
+							<div class="stat-content">
+								<h3>Процент выполнения</h3>
+								<div class="stat-value" id="overallSuccessRate">0%</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="monthly-calendar-section">
+						<h3>Календарь месяца</h3>
+						<div class="calendar-container">
+							<div class="calendar" id="monthlyCalendar">
+								<!-- Календарь будет генерироваться динамически -->
+							</div>
+						</div>
+
+						<div class="monthly-stats">
+							<div class="monthly-stat-item">
+								<i class="fas fa-check text-success"></i>
+								<span>Выполнено: <strong id="monthlyCompleted">0</strong></span>
+							</div>
+							<div class="monthly-stat-item">
+								<i class="fas fa-times text-danger"></i>
+								<span>Провалено: <strong id="monthlyFailed">0</strong></span>
+							</div>
+							<div class="monthly-stat-item">
+								<i class="fas fa-star text-warning"></i>
+								<span>Опыт: <strong id="monthlyExperience">0</strong> XP</span>
+							</div>
+							<div class="monthly-stat-item">
+								<i class="fas fa-percentage text-info"></i>
+								<span>Успех: <strong id="monthlySuccessRate">0%</strong></span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<!-- Модальное окно добавления привычки -->
 			<div class="modal" id="habitModal">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h3 id="modalTitle">Добавить привычку</h3>
-						<button class="close-btn" id="closeModal">&times;</button>
+						<h3 id="modalTitle">
+							<i class="fas fa-plus"></i>
+							Добавить привычку
+						</h3>
+						<button class="close-btn" id="closeModal">
+							<i class="fas fa-times"></i>
+						</button>
 					</div>
 					<form id="habitForm">
 						<div class="form-group">
-							<label for="habitName">Название привычки:</label>
+							<label for="habitName">
+								<i class="fas fa-tag"></i>
+								Название привычки:
+							</label>
 							<input
 								type="text"
 								id="habitName"
@@ -75,7 +194,10 @@
 							/>
 						</div>
 						<div class="form-group">
-							<label for="habitDescription">Описание (необязательно):</label>
+							<label for="habitDescription">
+								<i class="fas fa-align-left"></i>
+								Описание (необязательно):
+							</label>
 							<textarea
 								id="habitDescription"
 								placeholder="Краткое описание привычки"
@@ -83,9 +205,13 @@
 						</div>
 						<div class="form-actions">
 							<button type="button" class="btn-secondary" id="cancelBtn">
+								<i class="fas fa-times"></i>
 								Отмена
 							</button>
-							<button type="submit" class="btn-primary">Добавить</button>
+							<button type="submit" class="btn-primary">
+								<i class="fas fa-plus"></i>
+								Добавить
+							</button>
 						</div>
 					</form>
 				</div>
@@ -95,8 +221,13 @@
 			<div class="modal" id="habitDetailsModal">
 				<div class="modal-content habit-details">
 					<div class="modal-header">
-						<h3 id="habitDetailsTitle">Детали привычки</h3>
-						<button class="close-btn" id="closeDetailsModal">&times;</button>
+						<h3 id="habitDetailsTitle">
+							<i class="fas fa-info-circle"></i>
+							Детали привычки
+						</h3>
+						<button class="close-btn" id="closeDetailsModal">
+							<i class="fas fa-times"></i>
+						</button>
 					</div>
 					<div class="habit-details-content">
 						<div class="habit-info">
@@ -104,23 +235,41 @@
 							<p id="habitDetailsDescription"></p>
 						</div>
 
-						<div class="habit-stats">
+						<div class="habit-stats-grid">
 							<div class="stat-item">
-								<span class="stat-label">Текущий стрик:</span>
-								<span class="stat-value" id="currentStreak">0</span>
+								<div class="stat-icon">
+									<i class="fas fa-fire"></i>
+								</div>
+								<div class="stat-content">
+									<span class="stat-label">Текущий стрик:</span>
+									<span class="stat-value" id="currentStreak">0</span>
+								</div>
 							</div>
 							<div class="stat-item">
-								<span class="stat-label">Максимальный стрик:</span>
-								<span class="stat-value" id="maxStreak">0</span>
+								<div class="stat-icon">
+									<i class="fas fa-trophy"></i>
+								</div>
+								<div class="stat-content">
+									<span class="stat-label">Максимальный стрик:</span>
+									<span class="stat-value" id="maxStreak">0</span>
+								</div>
 							</div>
 							<div class="stat-item">
-								<span class="stat-label">Всего дней:</span>
-								<span class="stat-value" id="totalDays">0</span>
+								<div class="stat-icon">
+									<i class="fas fa-calendar-check"></i>
+								</div>
+								<div class="stat-content">
+									<span class="stat-label">Всего дней:</span>
+									<span class="stat-value" id="totalDays">0</span>
+								</div>
 							</div>
 						</div>
 
 						<div class="calendar-container">
-							<h4>Календарь месяца</h4>
+							<h4>
+								<i class="fas fa-calendar-alt"></i>
+								Календарь месяца
+							</h4>
 							<div class="calendar" id="habitCalendar">
 								<!-- Календарь будет генерироваться динамически -->
 							</div>
@@ -128,9 +277,11 @@
 
 						<div class="habit-actions">
 							<button class="btn-secondary" id="moveToBacklogBtn">
+								<i class="fas fa-arrow-right"></i>
 								Переместить в беклог
 							</button>
 							<button class="btn-danger" id="deleteHabitBtn">
+								<i class="fas fa-trash"></i>
 								Удалить привычку
 							</button>
 						</div>

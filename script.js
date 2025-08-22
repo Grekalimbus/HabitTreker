@@ -108,7 +108,12 @@ class HabitTracker {
 		});
 		document.getElementById(`${tabName}Tab`).classList.add("active");
 
-		this.renderHabits();
+		if (tabName === "statistics") {
+			this.renderMonthlyCalendar();
+			this.updateOverallStats();
+		} else {
+			this.renderHabits();
+		}
 	}
 
 	// Открытие модального окна
@@ -393,6 +398,16 @@ class HabitTracker {
                 <div class="calendar-day ${classes}" 
                      onclick="habitTracker.toggleDay(habitTracker.currentHabit, new Date(${year}, ${month}, ${day}))">
                     ${day}
+                    ${
+											status === "completed"
+												? '<div class="day-stats"><span class="completed-count">+10</span></div>'
+												: ""
+										}
+                    ${
+											status === "failed"
+												? '<div class="day-stats"><span class="failed-count">-12</span></div>'
+												: ""
+										}
                 </div>
             `;
 		}
@@ -430,10 +445,13 @@ class HabitTracker {
 		return `
             <div class="habit-item" data-habit-id="${habit.id}">
                 <div class="habit-header">
-                    <div class="habit-name">${habit.name}</div>
+                    <div class="habit-name">
+                        <i class="fas fa-leaf"></i>
+                        ${habit.name}
+                    </div>
                     ${
 											!isActive
-												? '<button class="btn-primary activate-btn">Активировать</button>'
+												? '<button class="btn-primary activate-btn"><i class="fas fa-play"></i> Активировать</button>'
 												: ""
 										}
                 </div>
@@ -458,7 +476,7 @@ class HabitTracker {
                 </div>
                 ${
 									isActive
-										? '<div class="habit-actions"><button class="btn-secondary details-btn">Детали</button></div>'
+										? '<div class="habit-actions"><button class="btn-secondary details-btn"><i class="fas fa-info-circle"></i> Детали</button></div>'
 										: ""
 								}
             </div>
@@ -501,13 +519,220 @@ class HabitTracker {
 		const totalExp = parseInt(localStorage.getItem("totalExperience") || "0");
 		document.getElementById("totalExperience").textContent = `${totalExp} XP`;
 
+		// Обновляем прогресс-бар опыта
+		const experienceFill = document.getElementById("experienceFill");
+		if (experienceFill) {
+			let maxExp = 1000; // Максимальный опыт для текущего уровня
+			let currentLevelExp = totalExp;
+
+			// Определяем текущий уровень и опыт для него
+			if (totalExp >= 1000) {
+				maxExp = 2000;
+				currentLevelExp = totalExp - 1000;
+			} else if (totalExp >= 500) {
+				maxExp = 1000;
+				currentLevelExp = totalExp - 500;
+			} else if (totalExp >= 100) {
+				maxExp = 500;
+				currentLevelExp = totalExp - 100;
+			} else {
+				maxExp = 100;
+				currentLevelExp = totalExp;
+			}
+
+			const percentage = Math.min(
+				(currentLevelExp / (maxExp - (maxExp === 100 ? 0 : maxExp - 100))) *
+					100,
+				100
+			);
+			experienceFill.style.width = `${percentage}%`;
+		}
+
 		// Определяем уровень
 		let level = "Новичок";
 		if (totalExp >= 1000) level = "Мастер";
 		else if (totalExp >= 500) level = "Продвинутый";
 		else if (totalExp >= 100) level = "Ученик";
 
-		document.getElementById("levelBadge").textContent = level;
+		document.getElementById(
+			"levelBadge"
+		).innerHTML = `<i class="fas fa-medal"></i><span>${level}</span>`;
+	}
+
+	// Рендеринг месячного календаря
+	renderMonthlyCalendar() {
+		const calendar = document.getElementById("monthlyCalendar");
+		if (!calendar) return;
+
+		const currentDate = new Date();
+		const year = currentDate.getFullYear();
+		const month = currentDate.getMonth();
+		const daysInMonth = new Date(year, month + 1, 0).getDate();
+		const firstDayOfMonth = new Date(year, month, 1).getDay();
+
+		let calendarHTML = `
+			<div class="calendar-header">
+				<span>Пн</span>
+				<span>Вт</span>
+				<span>Ср</span>
+				<span>Чт</span>
+				<span>Пт</span>
+				<span>Сб</span>
+				<span>Вс</span>
+			</div>
+		`;
+
+		// Добавляем пустые ячейки для начала месяца
+		for (
+			let i = 0;
+			i < (firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1);
+			i++
+		) {
+			calendarHTML += '<div class="calendar-day empty"></div>';
+		}
+
+		// Добавляем дни месяца
+		for (let day = 1; day <= daysInMonth; day++) {
+			const date = new Date(year, month, day);
+			const dateStr = date.toISOString().split("T")[0];
+			const isToday = date.toDateString() === currentDate.toDateString();
+			const dayStats = this.getDayStats(dateStr);
+
+			let classes = "calendar-day";
+			if (dayStats.completed > 0 && dayStats.failed === 0)
+				classes += " completed";
+			else if (dayStats.failed > 0) classes += " failed";
+			if (isToday) classes += " today";
+
+			calendarHTML += `
+				<div class="calendar-day ${classes}" 
+					 data-date="${dateStr}"
+					 title="${this.getDayTooltip(dateStr, dayStats)}">
+					${day}
+					${
+						dayStats.completed > 0
+							? `<div class="day-stats"><span class="completed-count">+${dayStats.completed}</span></div>`
+							: ""
+					}
+					${
+						dayStats.failed > 0
+							? `<div class="day-stats"><span class="failed-count">-${dayStats.failed}</span></div>`
+							: ""
+					}
+				</div>
+			`;
+		}
+
+		calendar.innerHTML = calendarHTML;
+		this.updateMonthlyStats();
+	}
+
+	// Получение статистики за день
+	getDayStats(dateStr) {
+		let completed = 0;
+		let failed = 0;
+
+		[...this.habits.active, ...this.habits.backlog].forEach(habit => {
+			if (habit.completedDays[dateStr]) {
+				if (habit.completedDays[dateStr] === "completed") {
+					completed++;
+				} else if (habit.completedDays[dateStr] === "failed") {
+					failed++;
+				}
+			}
+		});
+
+		return { completed, failed };
+	}
+
+	// Получение подсказки для дня
+	getDayTooltip(dateStr, dayStats) {
+		if (dayStats.completed === 0 && dayStats.failed === 0) {
+			return `День ${dateStr}\nНет отметок`;
+		}
+
+		let tooltip = `День ${dateStr}\n`;
+		if (dayStats.completed > 0) {
+			tooltip += `Выполнено: ${dayStats.completed} (+${
+				dayStats.completed * 10
+			} XP)\n`;
+		}
+		if (dayStats.failed > 0) {
+			tooltip += `Провалено: ${dayStats.failed} (-${dayStats.failed * 12} XP)`;
+		}
+
+		return tooltip;
+	}
+
+	// Обновление месячной статистики
+	updateMonthlyStats() {
+		const currentDate = new Date();
+		const year = currentDate.getFullYear();
+		const month = currentDate.getMonth();
+
+		let totalCompleted = 0;
+		let totalFailed = 0;
+		let totalExperience = 0;
+
+		// Проходим по всем дням месяца
+		for (let day = 1; day <= new Date(year, month + 1, 0).getDate(); day++) {
+			const date = new Date(year, month, day);
+			const dateStr = date.toISOString().split("T")[0];
+			const dayStats = this.getDayStats(dateStr);
+
+			totalCompleted += dayStats.completed;
+			totalFailed += dayStats.failed;
+			totalExperience += dayStats.completed * 10 - dayStats.failed * 12;
+		}
+
+		// Обновляем элементы на странице
+		document.getElementById("monthlyCompleted").textContent = totalCompleted;
+		document.getElementById("monthlyFailed").textContent = totalFailed;
+		document.getElementById("monthlyExperience").textContent = totalExperience;
+
+		const totalDays = totalCompleted + totalFailed;
+		const successRate =
+			totalDays > 0 ? Math.round((totalCompleted / totalDays) * 100) : 0;
+		document.getElementById(
+			"monthlySuccessRate"
+		).textContent = `${successRate}%`;
+	}
+
+	// Обновление общей статистики
+	updateOverallStats() {
+		let overallCurrentStreak = 0;
+		let overallMaxStreak = 0;
+		let overallTotalDays = 0;
+		let totalCompleted = 0;
+		let totalFailed = 0;
+
+		// Собираем статистику по всем привычкам
+		[...this.habits.active, ...this.habits.backlog].forEach(habit => {
+			overallCurrentStreak = Math.max(
+				overallCurrentStreak,
+				habit.currentStreak
+			);
+			overallMaxStreak = Math.max(overallMaxStreak, habit.maxStreak);
+			overallTotalDays += habit.totalDays;
+
+			Object.values(habit.completedDays).forEach(status => {
+				if (status === "completed") totalCompleted++;
+				else if (status === "failed") totalFailed++;
+			});
+		});
+
+		// Обновляем элементы на странице
+		document.getElementById("overallCurrentStreak").textContent =
+			overallCurrentStreak;
+		document.getElementById("overallMaxStreak").textContent = overallMaxStreak;
+		document.getElementById("overallTotalDays").textContent = overallTotalDays;
+
+		const totalDays = totalCompleted + totalFailed;
+		const overallSuccessRate =
+			totalDays > 0 ? Math.round((totalCompleted / totalDays) * 100) : 0;
+		document.getElementById(
+			"overallSuccessRate"
+		).textContent = `${overallSuccessRate}%`;
 	}
 
 	// Загрузка привычек из localStorage

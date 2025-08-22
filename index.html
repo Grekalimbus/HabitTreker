@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Трекер Привычек</title>
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<div class="app">
+			<!-- Заголовок -->
+			<header class="header">
+				<h1>Трекер Привычек</h1>
+				<div class="user-stats">
+					<div class="level-info">
+						<span class="level-badge" id="levelBadge">Новичок</span>
+						<span class="experience" id="totalExperience">0 XP</span>
+					</div>
+				</div>
+			</header>
+
+			<!-- Навигация по вкладкам -->
+			<nav class="tabs">
+				<button class="tab-btn active" data-tab="active">
+					Активные привычки
+				</button>
+				<button class="tab-btn" data-tab="backlog">Беклог</button>
+			</nav>
+
+			<!-- Вкладка активных привычек -->
+			<div class="tab-content active" id="activeTab">
+				<div class="habits-container">
+					<div class="add-habit-section">
+						<button class="add-habit-btn" id="addHabitBtn">
+							<span>+</span> Добавить привычку
+						</button>
+					</div>
+
+					<div class="habits-list" id="activeHabitsList">
+						<!-- Привычки будут добавляться динамически -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Вкладка беклога -->
+			<div class="tab-content" id="backlogTab">
+				<div class="backlog-container">
+					<div class="add-habit-section">
+						<button class="add-habit-btn" id="addBacklogBtn">
+							<span>+</span> Добавить в беклог
+						</button>
+					</div>
+
+					<div class="habits-list" id="backlogHabitsList">
+						<!-- Привычки из беклога будут добавляться динамически -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Модальное окно добавления привычки -->
+			<div class="modal" id="habitModal">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h3 id="modalTitle">Добавить привычку</h3>
+						<button class="close-btn" id="closeModal">&times;</button>
+					</div>
+					<form id="habitForm">
+						<div class="form-group">
+							<label for="habitName">Название привычки:</label>
+							<input
+								type="text"
+								id="habitName"
+								required
+								placeholder="Например: Читать 30 минут"
+							/>
+						</div>
+						<div class="form-group">
+							<label for="habitDescription">Описание (необязательно):</label>
+							<textarea
+								id="habitDescription"
+								placeholder="Краткое описание привычки"
+							></textarea>
+						</div>
+						<div class="form-actions">
+							<button type="button" class="btn-secondary" id="cancelBtn">
+								Отмена
+							</button>
+							<button type="submit" class="btn-primary">Добавить</button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<!-- Модальное окно деталей привычки -->
+			<div class="modal" id="habitDetailsModal">
+				<div class="modal-content habit-details">
+					<div class="modal-header">
+						<h3 id="habitDetailsTitle">Детали привычки</h3>
+						<button class="close-btn" id="closeDetailsModal">&times;</button>
+					</div>
+					<div class="habit-details-content">
+						<div class="habit-info">
+							<h4 id="habitDetailsName"></h4>
+							<p id="habitDetailsDescription"></p>
+						</div>
+
+						<div class="habit-stats">
+							<div class="stat-item">
+								<span class="stat-label">Текущий стрик:</span>
+								<span class="stat-value" id="currentStreak">0</span>
+							</div>
+							<div class="stat-item">
+								<span class="stat-label">Максимальный стрик:</span>
+								<span class="stat-value" id="maxStreak">0</span>
+							</div>
+							<div class="stat-item">
+								<span class="stat-label">Всего дней:</span>
+								<span class="stat-value" id="totalDays">0</span>
+							</div>
+						</div>
+
+						<div class="calendar-container">
+							<h4>Календарь месяца</h4>
+							<div class="calendar" id="habitCalendar">
+								<!-- Календарь будет генерироваться динамически -->
+							</div>
+						</div>
+
+						<div class="habit-actions">
+							<button class="btn-secondary" id="moveToBacklogBtn">
+								Переместить в беклог
+							</button>
+							<button class="btn-danger" id="deleteHabitBtn">
+								Удалить привычку
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="script.js"></script>
+	</body>
+</html>

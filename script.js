@@ -4,6 +4,7 @@ class HabitTracker {
 		this.habits = this.loadHabits();
 		this.currentTab = "active";
 		this.currentHabit = null;
+		this.isReversed = false; // Флаг для отслеживания состояния сортировки
 		this.init();
 	}
 
@@ -24,6 +25,7 @@ class HabitTracker {
 		this.checkDailyPenalties(); // Проверяем штрафы за невыполненные привычки
 		this.renderHabits();
 		this.updateUserStats();
+		this.updateSortButtonText(); // Устанавливаем правильный текст кнопки сортировки
 		this.switchTab("active");
 		console.log("Инициализация завершена");
 	}
@@ -66,6 +68,16 @@ class HabitTracker {
 				this.applyCalendarFilter(filter);
 			});
 		});
+
+		// Кнопка сортировки активных привычек
+		const reverseSortBtn = document.getElementById("reverseSortBtn");
+		if (reverseSortBtn) {
+			reverseSortBtn.addEventListener("click", () => {
+				this.isReversed = !this.isReversed;
+				this.renderHabits();
+				this.updateSortButtonText();
+			});
+		}
 
 		// Модальные окна
 		document.getElementById("closeModal").addEventListener("click", () => {
@@ -447,7 +459,7 @@ class HabitTracker {
 	renderHabitDetailsCalendar(habit) {
 		const calendar = document.getElementById("habitCalendar");
 		if (!calendar) return;
-		
+
 		const currentDate = new Date();
 		const year = currentDate.getFullYear();
 		const month = currentDate.getMonth();
@@ -580,7 +592,7 @@ class HabitTracker {
 	showDayDetails(dateStr) {
 		const date = new Date(dateStr);
 		const isToday = date.toDateString() === new Date().toDateString();
-		
+
 		// Собираем статистику по всем активным привычкам для этого дня
 		let completedCount = 0;
 		let failedCount = 0;
@@ -609,7 +621,7 @@ class HabitTracker {
 								day: "numeric",
 								month: "long",
 								weekday: "long",
-								year: "numeric"
+								year: "numeric",
 							})}
 						</h3>
 						<button class="close-btn" onclick="habitTracker.closeDayDetailsModal()">
@@ -812,7 +824,7 @@ class HabitTracker {
 
 		container.innerHTML =
 			statsHTML || '<p class="empty-state">Нет данных для отображения</p>';
-		
+
 		// Обновляем основной календарь при смене фильтра
 		if (this.currentTab === "statistics") {
 			this.renderMainStatisticsCalendar();
@@ -824,11 +836,14 @@ class HabitTracker {
 		const activeList = document.getElementById("activeHabitsList");
 		const backlogList = document.getElementById("backlogHabitsList");
 
-		// Рендерим активные привычки
+		// Рендерим активные привычки (сортировка зависит от флага isReversed)
 		activeList.innerHTML =
 			this.habits.active.length === 0
 				? '<p class="empty-state">У вас пока нет активных привычек. Добавьте первую!</p>'
-				: this.habits.active
+				: (this.isReversed
+						? [...this.habits.active].reverse()
+						: this.habits.active
+				  )
 						.map(habit => this.renderHabitItem(habit, true))
 						.join("");
 
@@ -1026,8 +1041,6 @@ class HabitTracker {
 		}
 	}
 
-
-
 	// Получение статистики за день
 	getDayStats(dateStr) {
 		let completed = 0;
@@ -1064,8 +1077,6 @@ class HabitTracker {
 
 		return tooltip;
 	}
-
-
 
 	// Обновление общей статистики
 	updateOverallStats() {
@@ -1114,6 +1125,20 @@ class HabitTracker {
 			active: [],
 			backlog: [],
 		};
+	}
+
+	// Обновление текста кнопки сортировки
+	updateSortButtonText() {
+		const reverseSortBtn = document.getElementById("reverseSortBtn");
+		if (reverseSortBtn) {
+			if (this.isReversed) {
+				reverseSortBtn.innerHTML =
+					'<i class="fas fa-sort-amount-up"></i> Сортировка сверху вниз';
+			} else {
+				reverseSortBtn.innerHTML =
+					'<i class="fas fa-sort-amount-down"></i> Сортировка снизу вверх';
+			}
+		}
 	}
 
 	// Сохранение привычек в localStorage

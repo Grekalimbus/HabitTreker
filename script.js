@@ -971,18 +971,29 @@ class HabitTracker {
 
 		for (let i = levels.length - 1; i >= 0; i--) {
 			if (totalExp >= levels[i].minExp) {
+				const currentLevel = levels[i];
+				const nextLevel = i < levels.length - 1 ? levels[i + 1] : null;
+
+				let progressToNext = 0;
+				if (nextLevel) {
+					// Прогресс основан на общем накопленном опыте
+					progressToNext = Math.min(
+						((totalExp - currentLevel.minExp) /
+							(nextLevel.minExp - currentLevel.minExp)) *
+							100,
+						100
+					);
+				} else {
+					// Если это максимальный уровень, прогресс 100%
+					progressToNext = 100;
+				}
+
 				return {
-					...levels[i],
-					nextLevel: i < levels.length - 1 ? levels[i + 1] : null,
-					currentExp: totalExp - levels[i].minExp,
-					progressToNext: levels[i].nextLevel
-						? Math.min(
-								((totalExp - levels[i].minExp) /
-									(levels[i].nextLevel.minExp - levels[i].minExp)) *
-									100,
-								100
-						  )
-						: 100,
+					...currentLevel,
+					nextLevel: nextLevel,
+					totalExp: totalExp, // Общий накопленный опыт
+					progressToNext: progressToNext,
+					allLevels: levels, // Добавляем все уровни для тултипа
 				};
 			}
 		}
@@ -1000,7 +1011,17 @@ class HabitTracker {
 		// Обновляем прогресс-бар опыта
 		const experienceFill = document.getElementById("experienceFill");
 		if (experienceFill) {
-			experienceFill.style.width = `${levelInfo.progressToNext}%`;
+			// Убеждаемся, что прогресс корректно отображается
+			const progressWidth = Math.max(
+				0,
+				Math.min(100, levelInfo.progressToNext)
+			);
+			experienceFill.style.width = `${progressWidth}%`;
+
+			// Добавляем отладочную информацию
+			console.log(
+				`Progress bar: ${progressWidth}% (${totalExp} XP, level: ${levelInfo.name})`
+			);
 		}
 
 		// Обновляем уровень
@@ -1008,33 +1029,47 @@ class HabitTracker {
 			"levelBadge"
 		).innerHTML = `<i class="fas fa-medal"></i><span>${levelInfo.name}</span>`;
 
-		// Добавляем информацию о прогрессе к следующему уровню
+		// Создаем подробный тултип со всеми уровнями
 		const levelBadge = document.getElementById("levelBadge");
 		const levelProgress = document.getElementById("levelProgress");
 
-		if (levelInfo.nextLevel) {
-			levelBadge.title = `${levelInfo.name} (${levelInfo.currentExp}/${
-				levelInfo.nextLevel.minExp - levelInfo.minExp
-			} XP)\nСледующий уровень: ${levelInfo.nextLevel.name} (${
-				levelInfo.nextLevel.requiredExp
-			} XP)`;
+		// Формируем тултип со всеми уровнями
+		let tooltipText = `🎯 СИСТЕМА УРОВНЕЙ\n`;
+		tooltipText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+		levelInfo.allLevels.forEach((level, index) => {
+			const isCurrentLevel =
+				level.minExp <= totalExp && totalExp <= level.maxExp;
+			const isCompleted = totalExp > level.maxExp;
+			const isLocked = totalExp < level.minExp;
 
-			// Обновляем текст прогресса
-			if (levelProgress) {
-				const progressText = levelProgress.querySelector(".progress-text");
-				if (progressText) {
-					progressText.textContent = `${levelInfo.currentExp} / ${
-						levelInfo.nextLevel.minExp - levelInfo.minExp
-					} XP до ${levelInfo.nextLevel.name}`;
-				}
+			let status = "";
+			if (isCurrentLevel) status = "📍 ТЕКУЩИЙ";
+			else if (isCompleted) status = "✅ ПРОЙДЕН";
+			else if (isLocked) status = "🔒 ЗАБЛОКИРОВАН";
+
+			tooltipText += `${status}\n`;
+			tooltipText += `└─ ${level.name}: ${level.minExp}-${level.maxExp} XP\n`;
+
+			if (isCurrentLevel && levelInfo.nextLevel) {
+				tooltipText += `   Прогресс: ${levelInfo.totalExp}/${levelInfo.nextLevel.minExp} XP\n`;
 			}
-		} else {
-			levelBadge.title = `${levelInfo.name} - Максимальный уровень!`;
+			tooltipText += "\n";
+		});
 
-			// Скрываем прогресс для максимального уровня
-			if (levelProgress) {
-				const progressText = levelProgress.querySelector(".progress-text");
-				if (progressText) {
+		levelBadge.setAttribute("data-tooltip", tooltipText);
+
+		// Добавляем отладочную информацию для тултипа
+		console.log("Tooltip created:", tooltipText);
+		console.log("Level badge element:", levelBadge);
+
+		// Обновляем текст прогресса
+		if (levelProgress) {
+			const progressText = levelProgress.querySelector(".progress-text");
+			if (progressText) {
+				if (levelInfo.nextLevel) {
+					// Показываем общий накопленный опыт / опыт нужный для следующего уровня
+					progressText.textContent = `${levelInfo.totalExp} / ${levelInfo.nextLevel.minExp} XP до ${levelInfo.nextLevel.name}`;
+				} else {
 					progressText.textContent = "Максимальный уровень достигнут!";
 				}
 			}
@@ -1147,7 +1182,7 @@ class HabitTracker {
 	}
 }
 
-// Добавляем стили для пустого состояния и исправляем модальные окна
+// Добавляем стили для пустого состояния
 const style = document.createElement("style");
 style.textContent = `
     .empty-state {
@@ -1166,38 +1201,6 @@ style.textContent = `
     .details-btn {
         font-size: 0.8rem;
         padding: 6px 12px;
-    }
-    
-    /* Принудительное исправление для модальных окон */
-    .modal.active {
-        display: flex !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        z-index: 1000 !important;
-    }
-    
-    /* Дополнительные стили для модального окна */
-    .modal {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        background-color: rgba(0, 0, 0, 0.8) !important;
-        z-index: 1000 !important;
-    }
-    
-    .modal-content {
-        background-color: #2a2a2a !important;
-        border-radius: 12px !important;
-        padding: 30px !important;
-        max-width: 500px !important;
-        width: 90% !important;
-        max-height: 90vh !important;
-        overflow-y: auto !important;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
-        position: relative !important;
-        z-index: 1001 !important;
     }
 `;
 document.head.appendChild(style);

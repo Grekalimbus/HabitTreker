@@ -1563,6 +1563,71 @@ body {
 	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
+/* Секция чекбокса для сегодняшнего дня */
+.today-checkbox-section {
+	margin: 20px 0;
+	padding: 15px;
+	background: rgba(255, 255, 255, 0.03);
+	border-radius: 10px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.today-checkbox-label {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	cursor: pointer;
+	user-select: none;
+	transition: all 0.3s ease;
+}
+
+.today-checkbox-label:hover {
+	transform: translateY(-1px);
+}
+
+.today-checkbox {
+	display: none;
+}
+
+.checkbox-custom {
+	width: 20px;
+	height: 20px;
+	border: 2px solid rgba(255, 255, 255, 0.3);
+	border-radius: 4px;
+	position: relative;
+	transition: all 0.3s ease;
+	background: rgba(255, 255, 255, 0.05);
+}
+
+.today-checkbox:checked + .checkbox-custom {
+	background: linear-gradient(135deg, #27ae60, #2ecc71);
+	border-color: #27ae60;
+	box-shadow: 0 0 10px rgba(39, 174, 96, 0.3);
+}
+
+.today-checkbox:checked + .checkbox-custom::after {
+	content: "✓";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: white;
+	font-size: 14px;
+	font-weight: bold;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.checkbox-text {
+	font-size: 0.95rem;
+	color: #ccc;
+	font-weight: 500;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.today-checkbox:checked ~ .checkbox-text {
+	color: #27ae60;
+}
+
 /* Пустое состояние */
 .empty-state {
 	text-align: center;
@@ -1657,4 +1722,69 @@ body {
 		height: 50px;
 		font-size: 1.2rem;
 	}
+
+	.today-checkbox-section {
+		padding: 12px;
+	}
+
+	.checkbox-custom {
+		width: 18px;
+		height: 18px;
+	}
+
+	.checkbox-text {
+		font-size: 0.9rem;
+	}
+}
+
+/* Уведомления об опыте */
+.experience-notification {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	background: linear-gradient(135deg, #ff6b35, #ff8c42);
+	color: white;
+	padding: 15px 20px;
+	border-radius: 10px;
+	box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+	z-index: 10000;
+	transform: translateX(400px);
+	transition: transform 0.3s ease;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-weight: 600;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.experience-notification.show {
+	transform: translateX(0);
+}
+
+.experience-notification i {
+	font-size: 1.2rem;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.experience-notification.negative {
+	background: linear-gradient(135deg, #e74c3c, #c0392b);
+	box-shadow: 0 10px 30px rgba(231, 76, 60, 0.3);
+}
+
+.experience-notification.positive {
+	background: linear-gradient(135deg, #27ae60, #2ecc71);
+	box-shadow: 0 10px 30px rgba(39, 174, 96, 0.3);
+}
+
+/* Прогресс уровня */
+.level-progress {
+	margin-top: 8px;
+	text-align: center;
+}
+
+.progress-text {
+	font-size: 0.8rem;
+	color: #888;
+	font-weight: 500;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }

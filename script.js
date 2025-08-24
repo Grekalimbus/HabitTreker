@@ -21,6 +21,7 @@ class HabitTracker {
 		);
 
 		this.setupEventListeners();
+		this.checkDailyPenalties(); // Проверяем штрафы за невыполненные привычки
 		this.renderHabits();
 		this.updateUserStats();
 		this.switchTab("active");
@@ -298,6 +299,25 @@ class HabitTracker {
 		}
 	}
 
+	// Отметка привычки на сегодня
+	toggleTodayHabit(habit, isCompleted) {
+		const today = new Date().toISOString().split('T')[0];
+		
+		if (isCompleted) {
+			// Отмечаем как выполненную
+			habit.completedDays[today] = "completed";
+			this.addExperience(10);
+		} else {
+			// Убираем отметку
+			delete habit.completedDays[today];
+		}
+
+		this.updateHabitStats(habit);
+		this.saveHabits();
+		this.updateUserStats();
+		this.renderHabits(); // Обновляем список привычек для обновления чекбокса
+	}
+
 	// Отметка дня в календаре
 	toggleDay(habit, date) {
 		const dateStr = date.toISOString().split("T")[0];
@@ -346,11 +366,73 @@ class HabitTracker {
 		habit.totalDays = dates.length;
 	}
 
+	// Проверка, выполнена ли привычка сегодня
+	isTodayCompleted(habit) {
+		const today = new Date().toISOString().split('T')[0];
+		return habit.completedDays[today] === "completed";
+	}
+
+	// Проверка и применение штрафов за невыполненные привычки
+	checkDailyPenalties() {
+		const today = new Date().toISOString().split('T')[0];
+		const lastCheck = localStorage.getItem("lastPenaltyCheck");
+		
+		// Проверяем только раз в день
+		if (lastCheck === today) return;
+		
+		let totalPenalty = 0;
+		let penalizedHabits = 0;
+		
+		// Проверяем все активные привычки
+		this.habits.active.forEach(habit => {
+			if (!this.isTodayCompleted(habit)) {
+				// Отмечаем как невыполненную и применяем штраф
+				habit.completedDays[today] = "failed";
+				totalPenalty += 12; // -12 XP за каждую невыполненную привычку
+				penalizedHabits++;
+			}
+		});
+		
+		// Применяем штрафы
+		if (totalPenalty > 0) {
+			this.addExperience(-totalPenalty);
+			console.log(`Применены штрафы: -${totalPenalty} XP за ${penalizedHabits} невыполненных привычек`);
+		}
+		
+		// Сохраняем дату проверки
+		localStorage.setItem("lastPenaltyCheck", today);
+		this.saveHabits();
+	}
+
+	// Показ уведомления об опыте
+	showExperienceNotification(points) {
+		const notification = document.createElement('div');
+		notification.className = `experience-notification ${points > 0 ? 'positive' : 'negative'}`;
+		notification.innerHTML = `
+			<i class="fas fa-${points > 0 ? 'plus' : 'minus'}"></i>
+			<span>${points > 0 ? '+' : ''}${points} XP</span>
+		`;
+		
+		document.body.appendChild(notification);
+		
+		// Анимация появления
+		setTimeout(() => notification.classList.add('show'), 100);
+		
+		// Удаление через 3 секунды
+		setTimeout(() => {
+			notification.classList.remove('show');
+			setTimeout(() => notification.remove(), 300);
+		}, 3000);
+	}
+
 	// Добавление опыта
 	addExperience(points) {
 		const currentExp = parseInt(localStorage.getItem("totalExperience") || "0");
 		const newExp = Math.max(0, currentExp + points);
 		localStorage.setItem("totalExperience", newExp.toString());
+		
+		// Показываем уведомление
+		this.showExperienceNotification(points);
 	}
 
 	// Рендеринг календаря
@@ -476,7 +558,18 @@ class HabitTracker {
                 </div>
                 ${
 									isActive
-										? '<div class="habit-actions"><button class="btn-secondary details-btn"><i class="fas fa-info-circle"></i> Детали</button></div>'
+										? `<div class="today-checkbox-section">
+												<label class="today-checkbox-label">
+													<input type="checkbox" class="today-checkbox" data-habit-id="${habit.id}" ${this.isTodayCompleted(habit) ? 'checked' : ''}>
+													<span class="checkbox-custom"></span>
+													<span class="checkbox-text">Отметить на сегодня</span>
+												</label>
+											</div>
+											<div class="habit-actions">
+												<button class="btn-secondary details-btn">
+													<i class="fas fa-info-circle"></i> Детали
+												</button>
+											</div>`
 										: ""
 								}
             </div>
@@ -494,6 +587,19 @@ class HabitTracker {
 					const habitId = item.dataset.habitId;
 					const habit = this.habits.active.find(h => h.id === habitId);
 					if (habit) this.openModal("habitDetailsModal", habit);
+				});
+			}
+
+			// Обработчик для чекбокса
+			const todayCheckbox = item.querySelector(".today-checkbox");
+			if (todayCheckbox) {
+				todayCheckbox.addEventListener("change", e => {
+					e.stopPropagation();
+					const habitId = item.dataset.habitId;
+					const habit = this.habits.active.find(h => h.id === habitId);
+					if (habit) {
+						this.toggleTodayHabit(habit, e.target.checked);
+					}
 				});
 			}
 		});
@@ -514,49 +620,73 @@ class HabitTracker {
 			});
 	}
 
+	// Получение информации об уровне
+	getLevelInfo(totalExp) {
+		const levels = [
+			{ name: "Новичок", minExp: 0, maxExp: 99, requiredExp: 100 },
+			{ name: "Ученик", minExp: 100, maxExp: 499, requiredExp: 500 },
+			{ name: "Продвинутый", minExp: 500, maxExp: 999, requiredExp: 1000 },
+			{ name: "Мастер", minExp: 1000, maxExp: 1999, requiredExp: 2000 },
+			{ name: "Легенда", minExp: 2000, maxExp: 4999, requiredExp: 5000 }
+		];
+
+		for (let i = levels.length - 1; i >= 0; i--) {
+			if (totalExp >= levels[i].minExp) {
+				return {
+					...levels[i],
+					nextLevel: i < levels.length - 1 ? levels[i + 1] : null,
+					currentExp: totalExp - levels[i].minExp,
+					progressToNext: levels[i].nextLevel ? 
+						Math.min(((totalExp - levels[i].minExp) / (levels[i].nextLevel.minExp - levels[i].minExp)) * 100, 100) : 100
+				};
+			}
+		}
+		return levels[0];
+	}
+
 	// Обновление статистики пользователя
 	updateUserStats() {
 		const totalExp = parseInt(localStorage.getItem("totalExperience") || "0");
 		document.getElementById("totalExperience").textContent = `${totalExp} XP`;
 
+		// Получаем информацию об уровне
+		const levelInfo = this.getLevelInfo(totalExp);
+
 		// Обновляем прогресс-бар опыта
 		const experienceFill = document.getElementById("experienceFill");
 		if (experienceFill) {
-			let maxExp = 1000; // Максимальный опыт для текущего уровня
-			let currentLevelExp = totalExp;
-
-			// Определяем текущий уровень и опыт для него
-			if (totalExp >= 1000) {
-				maxExp = 2000;
-				currentLevelExp = totalExp - 1000;
-			} else if (totalExp >= 500) {
-				maxExp = 1000;
-				currentLevelExp = totalExp - 500;
-			} else if (totalExp >= 100) {
-				maxExp = 500;
-				currentLevelExp = totalExp - 100;
-			} else {
-				maxExp = 100;
-				currentLevelExp = totalExp;
-			}
-
-			const percentage = Math.min(
-				(currentLevelExp / (maxExp - (maxExp === 100 ? 0 : maxExp - 100))) *
-					100,
-				100
-			);
-			experienceFill.style.width = `${percentage}%`;
+			experienceFill.style.width = `${levelInfo.progressToNext}%`;
 		}
 
-		// Определяем уровень
-		let level = "Новичок";
-		if (totalExp >= 1000) level = "Мастер";
-		else if (totalExp >= 500) level = "Продвинутый";
-		else if (totalExp >= 100) level = "Ученик";
+		// Обновляем уровень
+		document.getElementById("levelBadge").innerHTML = 
+			`<i class="fas fa-medal"></i><span>${levelInfo.name}</span>`;
 
-		document.getElementById(
-			"levelBadge"
-		).innerHTML = `<i class="fas fa-medal"></i><span>${level}</span>`;
+		// Добавляем информацию о прогрессе к следующему уровню
+		const levelBadge = document.getElementById("levelBadge");
+		const levelProgress = document.getElementById("levelProgress");
+		
+		if (levelInfo.nextLevel) {
+			levelBadge.title = `${levelInfo.name} (${levelInfo.currentExp}/${levelInfo.nextLevel.minExp - levelInfo.minExp} XP)\nСледующий уровень: ${levelInfo.nextLevel.name} (${levelInfo.nextLevel.requiredExp} XP)`;
+			
+			// Обновляем текст прогресса
+			if (levelProgress) {
+				const progressText = levelProgress.querySelector('.progress-text');
+				if (progressText) {
+					progressText.textContent = `${levelInfo.currentExp} / ${levelInfo.nextLevel.minExp - levelInfo.minExp} XP до ${levelInfo.nextLevel.name}`;
+				}
+			}
+		} else {
+			levelBadge.title = `${levelInfo.name} - Максимальный уровень!`;
+			
+			// Скрываем прогресс для максимального уровня
+			if (levelProgress) {
+				const progressText = levelProgress.querySelector('.progress-text');
+				if (progressText) {
+					progressText.textContent = 'Максимальный уровень достигнут!';
+				}
+			}
+		}
 	}
 
 	// Рендеринг месячного календаря

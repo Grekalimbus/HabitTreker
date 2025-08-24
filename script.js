@@ -39,29 +39,33 @@ class HabitTracker {
 			});
 		});
 
-		// Кнопки добавления привычек
+		// Кнопка добавления привычек (теперь одна для всех вкладок)
 		const addHabitBtn = document.getElementById("addHabitBtn");
-		const addBacklogBtn = document.getElementById("addBacklogBtn");
 
 		if (addHabitBtn) {
 			console.log("Кнопка addHabitBtn найдена, добавляем обработчик");
 			addHabitBtn.addEventListener("click", () => {
-				console.log("Клик по кнопке добавления активной привычки");
-				this.openModal("active");
+				console.log("Клик по кнопке добавления привычки");
+				this.openModal(this.currentTab);
 			});
 		} else {
 			console.error("Кнопка addHabitBtn не найдена!");
 		}
 
-		if (addBacklogBtn) {
-			console.log("Кнопка addBacklogBtn найдена, добавляем обработчик");
-			addBacklogBtn.addEventListener("click", () => {
-				console.log("Клик по кнопке добавления в беклог");
-				this.openModal("backlog");
+		// Фильтры календаря
+		document.querySelectorAll(".filter-btn").forEach(btn => {
+			btn.addEventListener("click", e => {
+				// Убираем активный класс у всех кнопок
+				document
+					.querySelectorAll(".filter-btn")
+					.forEach(b => b.classList.remove("active"));
+				// Добавляем активный класс к нажатой кнопке
+				e.target.classList.add("active");
+
+				const filter = e.target.dataset.filter;
+				this.applyCalendarFilter(filter);
 			});
-		} else {
-			console.error("Кнопка addBacklogBtn не найдена!");
-		}
+		});
 
 		// Модальные окна
 		document.getElementById("closeModal").addEventListener("click", () => {
@@ -110,7 +114,7 @@ class HabitTracker {
 		document.getElementById(`${tabName}Tab`).classList.add("active");
 
 		if (tabName === "statistics") {
-			this.renderMonthlyCalendar();
+			this.renderMainStatisticsCalendar();
 			this.updateOverallStats();
 		} else {
 			this.renderHabits();
@@ -237,7 +241,7 @@ class HabitTracker {
 		document.getElementById("maxStreak").textContent = habit.maxStreak;
 		document.getElementById("totalDays").textContent = habit.totalDays;
 
-		this.renderCalendar(habit);
+		this.renderHabitDetailsCalendar(habit);
 		this.setupHabitActions(habit);
 	}
 
@@ -301,8 +305,8 @@ class HabitTracker {
 
 	// Отметка привычки на сегодня
 	toggleTodayHabit(habit, isCompleted) {
-		const today = new Date().toISOString().split('T')[0];
-		
+		const today = new Date().toISOString().split("T")[0];
+
 		if (isCompleted) {
 			// Отмечаем как выполненную
 			habit.completedDays[today] = "completed";
@@ -338,7 +342,7 @@ class HabitTracker {
 		this.updateHabitStats(habit);
 		this.saveHabits();
 		this.updateUserStats();
-		this.renderCalendar(habit);
+		this.renderHabitDetailsCalendar(habit);
 	}
 
 	// Обновление статистики привычки
@@ -368,21 +372,21 @@ class HabitTracker {
 
 	// Проверка, выполнена ли привычка сегодня
 	isTodayCompleted(habit) {
-		const today = new Date().toISOString().split('T')[0];
+		const today = new Date().toISOString().split("T")[0];
 		return habit.completedDays[today] === "completed";
 	}
 
 	// Проверка и применение штрафов за невыполненные привычки
 	checkDailyPenalties() {
-		const today = new Date().toISOString().split('T')[0];
+		const today = new Date().toISOString().split("T")[0];
 		const lastCheck = localStorage.getItem("lastPenaltyCheck");
-		
+
 		// Проверяем только раз в день
 		if (lastCheck === today) return;
-		
+
 		let totalPenalty = 0;
 		let penalizedHabits = 0;
-		
+
 		// Проверяем все активные привычки
 		this.habits.active.forEach(habit => {
 			if (!this.isTodayCompleted(habit)) {
@@ -392,13 +396,15 @@ class HabitTracker {
 				penalizedHabits++;
 			}
 		});
-		
+
 		// Применяем штрафы
 		if (totalPenalty > 0) {
 			this.addExperience(-totalPenalty);
-			console.log(`Применены штрафы: -${totalPenalty} XP за ${penalizedHabits} невыполненных привычек`);
+			console.log(
+				`Применены штрафы: -${totalPenalty} XP за ${penalizedHabits} невыполненных привычек`
+			);
 		}
-		
+
 		// Сохраняем дату проверки
 		localStorage.setItem("lastPenaltyCheck", today);
 		this.saveHabits();
@@ -406,21 +412,23 @@ class HabitTracker {
 
 	// Показ уведомления об опыте
 	showExperienceNotification(points) {
-		const notification = document.createElement('div');
-		notification.className = `experience-notification ${points > 0 ? 'positive' : 'negative'}`;
+		const notification = document.createElement("div");
+		notification.className = `experience-notification ${
+			points > 0 ? "positive" : "negative"
+		}`;
 		notification.innerHTML = `
-			<i class="fas fa-${points > 0 ? 'plus' : 'minus'}"></i>
-			<span>${points > 0 ? '+' : ''}${points} XP</span>
+			<i class="fas fa-${points > 0 ? "plus" : "minus"}"></i>
+			<span>${points > 0 ? "+" : ""}${points} XP</span>
 		`;
-		
+
 		document.body.appendChild(notification);
-		
+
 		// Анимация появления
-		setTimeout(() => notification.classList.add('show'), 100);
-		
+		setTimeout(() => notification.classList.add("show"), 100);
+
 		// Удаление через 3 секунды
 		setTimeout(() => {
-			notification.classList.remove('show');
+			notification.classList.remove("show");
 			setTimeout(() => notification.remove(), 300);
 		}, 3000);
 	}
@@ -430,14 +438,16 @@ class HabitTracker {
 		const currentExp = parseInt(localStorage.getItem("totalExperience") || "0");
 		const newExp = Math.max(0, currentExp + points);
 		localStorage.setItem("totalExperience", newExp.toString());
-		
+
 		// Показываем уведомление
 		this.showExperienceNotification(points);
 	}
 
-	// Рендеринг календаря
-	renderCalendar(habit) {
+	// Рендеринг календаря для деталей привычки
+	renderHabitDetailsCalendar(habit) {
 		const calendar = document.getElementById("habitCalendar");
+		if (!calendar) return;
+		
 		const currentDate = new Date();
 		const year = currentDate.getFullYear();
 		const month = currentDate.getMonth();
@@ -495,6 +505,318 @@ class HabitTracker {
 		}
 
 		calendar.innerHTML = calendarHTML;
+	}
+
+	// Рендеринг детальной статистики по дням
+	renderDailyStats() {
+		this.applyCalendarFilter("month"); // По умолчанию показываем месяц
+	}
+
+	// Рендеринг основного календаря статистики
+	renderMainStatisticsCalendar() {
+		const calendar = document.getElementById("monthlyCalendar");
+		if (!calendar) return;
+
+		const currentDate = new Date();
+		const year = currentDate.getFullYear();
+		const month = currentDate.getMonth();
+		const daysInMonth = new Date(year, month + 1, 0).getDate();
+		const firstDayOfMonth = new Date(year, month, 1).getDay();
+
+		let calendarHTML = `
+			<div class="calendar-header">
+				<span>Пн</span>
+				<span>Вт</span>
+				<span>Ср</span>
+				<span>Чт</span>
+				<span>Пт</span>
+				<span>Сб</span>
+				<span>Вс</span>
+			</div>
+		`;
+
+		// Добавляем пустые ячейки для начала месяца
+		for (
+			let i = 0;
+			i < (firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1);
+			i++
+		) {
+			calendarHTML += '<div class="calendar-day empty"></div>';
+		}
+
+		// Добавляем дни месяца
+		for (let day = 1; day <= daysInMonth; day++) {
+			const date = new Date(year, month, day);
+			const dateStr = date.toISOString().split("T")[0];
+			const isToday = date.toDateString() === currentDate.toDateString();
+			const dayStats = this.getDayStats(dateStr);
+			const totalActiveHabits = this.habits.active.length;
+			const completedCount = dayStats.completed;
+			const failedCount = dayStats.failed;
+
+			let classes = "calendar-day";
+			if (completedCount > 0 && failedCount === 0) classes += " completed";
+			else if (failedCount > 0) classes += " failed";
+			if (isToday) classes += " today";
+
+			calendarHTML += `
+				<div class="calendar-day ${classes}" 
+					 data-date="${dateStr}"
+					 onclick="habitTracker.showDayDetails('${dateStr}')">
+					<div class="day-number">${day}</div>
+					${
+						totalActiveHabits > 0
+							? `<div class="day-stats">${completedCount}/${totalActiveHabits}</div>`
+							: ""
+					}
+				</div>
+			`;
+		}
+
+		calendar.innerHTML = calendarHTML;
+	}
+
+	// Показать детали дня в модальном окне
+	showDayDetails(dateStr) {
+		const date = new Date(dateStr);
+		const isToday = date.toDateString() === new Date().toDateString();
+		
+		// Собираем статистику по всем активным привычкам для этого дня
+		let completedCount = 0;
+		let failedCount = 0;
+		let completedHabits = [];
+		let failedHabits = [];
+
+		this.habits.active.forEach(habit => {
+			const status = habit.completedDays[dateStr];
+			if (status === "completed") {
+				completedCount++;
+				completedHabits.push(habit.name);
+			} else if (status === "failed") {
+				failedCount++;
+				failedHabits.push(habit.name);
+			}
+		});
+
+		// Создаем модальное окно
+		const modalHTML = `
+			<div class="modal active" id="dayDetailsModal">
+				<div class="modal-content day-details">
+					<div class="modal-header">
+						<h3>
+							<i class="fas fa-calendar-day"></i>
+							Статистика за ${date.toLocaleDateString("ru-RU", {
+								day: "numeric",
+								month: "long",
+								weekday: "long",
+								year: "numeric"
+							})}
+						</h3>
+						<button class="close-btn" onclick="habitTracker.closeDayDetailsModal()">
+							<i class="fas fa-times"></i>
+						</button>
+					</div>
+					<div class="day-details-content">
+						${this.generateDayStatsHTML(
+							date,
+							isToday,
+							completedCount,
+							failedCount,
+							completedHabits,
+							failedHabits
+						)}
+					</div>
+				</div>
+			</div>
+		`;
+
+		// Удаляем существующее модальное окно, если есть
+		const existingModal = document.getElementById("dayDetailsModal");
+		if (existingModal) {
+			existingModal.remove();
+		}
+
+		// Добавляем новое модальное окно
+		document.body.insertAdjacentHTML("beforeend", modalHTML);
+	}
+
+	// Закрыть модальное окно деталей дня
+	closeDayDetailsModal() {
+		const modal = document.getElementById("dayDetailsModal");
+		if (modal) {
+			modal.remove();
+		}
+	}
+
+	// Генерация HTML для статистики дня
+	generateDayStatsHTML(
+		date,
+		isToday,
+		completedCount,
+		failedCount,
+		completedHabits,
+		failedHabits
+	) {
+		const dateFormatted = date.toLocaleDateString("ru-RU", {
+			day: "numeric",
+			month: "long",
+			weekday: "long",
+		});
+
+		return `
+			<div class="daily-stat-card">
+				<div class="daily-stat-header">
+					<div class="daily-stat-date">${dateFormatted}</div>
+					${isToday ? '<span class="today-badge">Сегодня</span>' : ""}
+				</div>
+				<div class="daily-stat-summary">
+					${
+						completedCount > 0
+							? `
+						<div class="daily-stat-item completed">
+							<i class="fas fa-check"></i>
+							<span>Выполнено: ${completedCount}</span>
+						</div>
+					`
+							: ""
+					}
+					${
+						failedCount > 0
+							? `
+						<div class="daily-stat-item failed">
+							<i class="fas fa-times"></i>
+							<span>Провалено: ${failedCount}</span>
+						</div>
+					`
+							: ""
+					}
+					${
+						completedCount === 0 && failedCount === 0
+							? `
+						<div class="daily-stat-item">
+							<i class="fas fa-minus"></i>
+							<span>Нет активности</span>
+						</div>
+					`
+							: ""
+					}
+				</div>
+				${
+					completedHabits.length > 0 || failedHabits.length > 0
+						? `
+					<div class="daily-habits-list">
+						${completedHabits
+							.map(
+								name => `
+							<div class="daily-habit-item">
+								<span class="daily-habit-name">${name}</span>
+								<div class="daily-habit-status completed">
+									<i class="fas fa-check"></i>
+									<span>Выполнено</span>
+								</div>
+							</div>
+						`
+							)
+							.join("")}
+						${failedHabits
+							.map(
+								name => `
+							<div class="daily-habit-item">
+								<span class="daily-habit-name">${name}</span>
+								<div class="daily-habit-status failed">
+									<i class="fas fa-times"></i>
+									<span>Провалено</span>
+								</div>
+							</div>
+						`
+							)
+							.join("")}
+					</div>
+				`
+						: ""
+				}
+			</div>
+		`;
+	}
+
+	// Применение фильтра к календарю
+	applyCalendarFilter(filter) {
+		const container = document.getElementById("dailyStatsContainer");
+		const currentDate = new Date();
+		const year = currentDate.getFullYear();
+		const month = currentDate.getMonth();
+
+		let statsHTML = "";
+		let startDate, endDate;
+
+		switch (filter) {
+			case "today":
+				startDate = new Date(currentDate);
+				endDate = new Date(currentDate);
+				break;
+			case "week":
+				// Начало недели (понедельник)
+				const dayOfWeek = currentDate.getDay();
+				const diff =
+					currentDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+				startDate = new Date(year, month, diff);
+				endDate = new Date(startDate);
+				endDate.setDate(startDate.getDate() + 6);
+				break;
+			case "month":
+			default:
+				startDate = new Date(year, month, 1);
+				endDate = new Date(year, month + 1, 0);
+				break;
+		}
+
+		// Генерируем статистику для выбранного периода
+		for (
+			let d = new Date(startDate);
+			d <= endDate;
+			d.setDate(d.getDate() + 1)
+		) {
+			const date = new Date(d);
+			const dateStr = date.toISOString().split("T")[0];
+			const isToday = date.toDateString() === currentDate.toDateString();
+
+			// Собираем статистику по всем активным привычкам для этого дня
+			let completedCount = 0;
+			let failedCount = 0;
+			let completedHabits = [];
+			let failedHabits = [];
+
+			this.habits.active.forEach(habit => {
+				const status = habit.completedDays[dateStr];
+				if (status === "completed") {
+					completedCount++;
+					completedHabits.push(habit.name);
+				} else if (status === "failed") {
+					failedCount++;
+					failedHabits.push(habit.name);
+				}
+			});
+
+			// Показываем только дни с активностью или сегодня
+			if (completedCount > 0 || failedCount > 0 || isToday) {
+				statsHTML += this.generateDayStatsHTML(
+					date,
+					isToday,
+					completedCount,
+					failedCount,
+					completedHabits,
+					failedHabits
+				);
+			}
+		}
+
+		container.innerHTML =
+			statsHTML || '<p class="empty-state">Нет данных для отображения</p>';
+		
+		// Обновляем основной календарь при смене фильтра
+		if (this.currentTab === "statistics") {
+			this.renderMainStatisticsCalendar();
+		}
 	}
 
 	// Рендеринг списка привычек
@@ -560,7 +882,9 @@ class HabitTracker {
 									isActive
 										? `<div class="today-checkbox-section">
 												<label class="today-checkbox-label">
-													<input type="checkbox" class="today-checkbox" data-habit-id="${habit.id}" ${this.isTodayCompleted(habit) ? 'checked' : ''}>
+													<input type="checkbox" class="today-checkbox" data-habit-id="${habit.id}" ${
+												this.isTodayCompleted(habit) ? "checked" : ""
+										  }>
 													<span class="checkbox-custom"></span>
 													<span class="checkbox-text">Отметить на сегодня</span>
 												</label>
@@ -627,7 +951,7 @@ class HabitTracker {
 			{ name: "Ученик", minExp: 100, maxExp: 499, requiredExp: 500 },
 			{ name: "Продвинутый", minExp: 500, maxExp: 999, requiredExp: 1000 },
 			{ name: "Мастер", minExp: 1000, maxExp: 1999, requiredExp: 2000 },
-			{ name: "Легенда", minExp: 2000, maxExp: 4999, requiredExp: 5000 }
+			{ name: "Легенда", minExp: 2000, maxExp: 4999, requiredExp: 5000 },
 		];
 
 		for (let i = levels.length - 1; i >= 0; i--) {
@@ -636,8 +960,14 @@ class HabitTracker {
 					...levels[i],
 					nextLevel: i < levels.length - 1 ? levels[i + 1] : null,
 					currentExp: totalExp - levels[i].minExp,
-					progressToNext: levels[i].nextLevel ? 
-						Math.min(((totalExp - levels[i].minExp) / (levels[i].nextLevel.minExp - levels[i].minExp)) * 100, 100) : 100
+					progressToNext: levels[i].nextLevel
+						? Math.min(
+								((totalExp - levels[i].minExp) /
+									(levels[i].nextLevel.minExp - levels[i].minExp)) *
+									100,
+								100
+						  )
+						: 100,
 				};
 			}
 		}
@@ -659,103 +989,44 @@ class HabitTracker {
 		}
 
 		// Обновляем уровень
-		document.getElementById("levelBadge").innerHTML = 
-			`<i class="fas fa-medal"></i><span>${levelInfo.name}</span>`;
+		document.getElementById(
+			"levelBadge"
+		).innerHTML = `<i class="fas fa-medal"></i><span>${levelInfo.name}</span>`;
 
 		// Добавляем информацию о прогрессе к следующему уровню
 		const levelBadge = document.getElementById("levelBadge");
 		const levelProgress = document.getElementById("levelProgress");
-		
+
 		if (levelInfo.nextLevel) {
-			levelBadge.title = `${levelInfo.name} (${levelInfo.currentExp}/${levelInfo.nextLevel.minExp - levelInfo.minExp} XP)\nСледующий уровень: ${levelInfo.nextLevel.name} (${levelInfo.nextLevel.requiredExp} XP)`;
-			
+			levelBadge.title = `${levelInfo.name} (${levelInfo.currentExp}/${
+				levelInfo.nextLevel.minExp - levelInfo.minExp
+			} XP)\nСледующий уровень: ${levelInfo.nextLevel.name} (${
+				levelInfo.nextLevel.requiredExp
+			} XP)`;
+
 			// Обновляем текст прогресса
 			if (levelProgress) {
-				const progressText = levelProgress.querySelector('.progress-text');
+				const progressText = levelProgress.querySelector(".progress-text");
 				if (progressText) {
-					progressText.textContent = `${levelInfo.currentExp} / ${levelInfo.nextLevel.minExp - levelInfo.minExp} XP до ${levelInfo.nextLevel.name}`;
+					progressText.textContent = `${levelInfo.currentExp} / ${
+						levelInfo.nextLevel.minExp - levelInfo.minExp
+					} XP до ${levelInfo.nextLevel.name}`;
 				}
 			}
 		} else {
 			levelBadge.title = `${levelInfo.name} - Максимальный уровень!`;
-			
+
 			// Скрываем прогресс для максимального уровня
 			if (levelProgress) {
-				const progressText = levelProgress.querySelector('.progress-text');
+				const progressText = levelProgress.querySelector(".progress-text");
 				if (progressText) {
-					progressText.textContent = 'Максимальный уровень достигнут!';
+					progressText.textContent = "Максимальный уровень достигнут!";
 				}
 			}
 		}
 	}
 
-	// Рендеринг месячного календаря
-	renderMonthlyCalendar() {
-		const calendar = document.getElementById("monthlyCalendar");
-		if (!calendar) return;
 
-		const currentDate = new Date();
-		const year = currentDate.getFullYear();
-		const month = currentDate.getMonth();
-		const daysInMonth = new Date(year, month + 1, 0).getDate();
-		const firstDayOfMonth = new Date(year, month, 1).getDay();
-
-		let calendarHTML = `
-			<div class="calendar-header">
-				<span>Пн</span>
-				<span>Вт</span>
-				<span>Ср</span>
-				<span>Чт</span>
-				<span>Пт</span>
-				<span>Сб</span>
-				<span>Вс</span>
-			</div>
-		`;
-
-		// Добавляем пустые ячейки для начала месяца
-		for (
-			let i = 0;
-			i < (firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1);
-			i++
-		) {
-			calendarHTML += '<div class="calendar-day empty"></div>';
-		}
-
-		// Добавляем дни месяца
-		for (let day = 1; day <= daysInMonth; day++) {
-			const date = new Date(year, month, day);
-			const dateStr = date.toISOString().split("T")[0];
-			const isToday = date.toDateString() === currentDate.toDateString();
-			const dayStats = this.getDayStats(dateStr);
-
-			let classes = "calendar-day";
-			if (dayStats.completed > 0 && dayStats.failed === 0)
-				classes += " completed";
-			else if (dayStats.failed > 0) classes += " failed";
-			if (isToday) classes += " today";
-
-			calendarHTML += `
-				<div class="calendar-day ${classes}" 
-					 data-date="${dateStr}"
-					 title="${this.getDayTooltip(dateStr, dayStats)}">
-					${day}
-					${
-						dayStats.completed > 0
-							? `<div class="day-stats"><span class="completed-count">+${dayStats.completed}</span></div>`
-							: ""
-					}
-					${
-						dayStats.failed > 0
-							? `<div class="day-stats"><span class="failed-count">-${dayStats.failed}</span></div>`
-							: ""
-					}
-				</div>
-			`;
-		}
-
-		calendar.innerHTML = calendarHTML;
-		this.updateMonthlyStats();
-	}
 
 	// Получение статистики за день
 	getDayStats(dateStr) {
@@ -794,39 +1065,7 @@ class HabitTracker {
 		return tooltip;
 	}
 
-	// Обновление месячной статистики
-	updateMonthlyStats() {
-		const currentDate = new Date();
-		const year = currentDate.getFullYear();
-		const month = currentDate.getMonth();
 
-		let totalCompleted = 0;
-		let totalFailed = 0;
-		let totalExperience = 0;
-
-		// Проходим по всем дням месяца
-		for (let day = 1; day <= new Date(year, month + 1, 0).getDate(); day++) {
-			const date = new Date(year, month, day);
-			const dateStr = date.toISOString().split("T")[0];
-			const dayStats = this.getDayStats(dateStr);
-
-			totalCompleted += dayStats.completed;
-			totalFailed += dayStats.failed;
-			totalExperience += dayStats.completed * 10 - dayStats.failed * 12;
-		}
-
-		// Обновляем элементы на странице
-		document.getElementById("monthlyCompleted").textContent = totalCompleted;
-		document.getElementById("monthlyFailed").textContent = totalFailed;
-		document.getElementById("monthlyExperience").textContent = totalExperience;
-
-		const totalDays = totalCompleted + totalFailed;
-		const successRate =
-			totalDays > 0 ? Math.round((totalCompleted / totalDays) * 100) : 0;
-		document.getElementById(
-			"monthlySuccessRate"
-		).textContent = `${successRate}%`;
-	}
 
 	// Обновление общей статистики
 	updateOverallStats() {

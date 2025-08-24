@@ -62,18 +62,15 @@
 					<i class="fas fa-chart-bar"></i>
 					<span>Статистика</span>
 				</button>
+				<button class="add-habit-btn" id="addHabitBtn">
+					<i class="fas fa-plus"></i>
+					<span>Добавить привычку</span>
+				</button>
 			</nav>
 
 			<!-- Вкладка активных привычек -->
 			<div class="tab-content active" id="activeTab">
 				<div class="habits-container">
-					<div class="add-habit-section">
-						<button class="add-habit-btn" id="addHabitBtn">
-							<i class="fas fa-plus"></i>
-							<span>Добавить привычку</span>
-						</button>
-					</div>
-
 					<div class="habits-list" id="activeHabitsList">
 						<!-- Привычки будут добавляться динамически -->
 					</div>
@@ -83,13 +80,6 @@
 			<!-- Вкладка беклога -->
 			<div class="tab-content" id="backlogTab">
 				<div class="backlog-container">
-					<div class="add-habit-section">
-						<button class="add-habit-btn" id="addBacklogBtn">
-							<i class="fas fa-plus"></i>
-							<span>Добавить в беклог</span>
-						</button>
-					</div>
-
 					<div class="habits-list" id="backlogHabitsList">
 						<!-- Привычки из беклога будут добавляться динамически -->
 					</div>
@@ -142,30 +132,48 @@
 					</div>
 
 					<div class="monthly-calendar-section">
-						<h3>Календарь месяца</h3>
-						<div class="calendar-container">
-							<div class="calendar" id="monthlyCalendar">
-								<!-- Календарь будет генерироваться динамически -->
+						<div class="calendar-header-section">
+							<h3>Календарь месяца</h3>
+							<div class="calendar-filters">
+								<button class="filter-btn active" data-filter="month">
+									<i class="fas fa-calendar-alt"></i>
+									Месяц
+								</button>
+								<button class="filter-btn" data-filter="week">
+									<i class="fas fa-calendar-week"></i>
+									Неделя
+								</button>
+								<button class="filter-btn" data-filter="today">
+									<i class="fas fa-calendar-day"></i>
+									Сегодня
+								</button>
 							</div>
 						</div>
+						<div class="calendar-container">
+							<div class="calendar" id="monthlyCalendar">
+								<!-- Календарь будет рендериться динамически -->
+							</div>
+							<div class="calendar-legend">
+								<div class="legend-item">
+									<span class="legend-color completed"></span>
+									<span>Выполнено</span>
+								</div>
+								<div class="legend-item">
+									<span class="legend-color failed"></span>
+									<span>Провалено</span>
+								</div>
+								<div class="legend-item">
+									<span class="legend-color today"></span>
+									<span>Сегодня</span>
+								</div>
+							</div>
+						</div>
+					</div>
 
-						<div class="monthly-stats">
-							<div class="monthly-stat-item">
-								<i class="fas fa-check text-success"></i>
-								<span>Выполнено: <strong id="monthlyCompleted">0</strong></span>
-							</div>
-							<div class="monthly-stat-item">
-								<i class="fas fa-times text-danger"></i>
-								<span>Провалено: <strong id="monthlyFailed">0</strong></span>
-							</div>
-							<div class="monthly-stat-item">
-								<i class="fas fa-star text-warning"></i>
-								<span>Опыт: <strong id="monthlyExperience">0</strong> XP</span>
-							</div>
-							<div class="monthly-stat-item">
-								<i class="fas fa-percentage text-info"></i>
-								<span>Успех: <strong id="monthlySuccessRate">0%</strong></span>
-							</div>
+					<div class="daily-stats-section">
+						<h3>Детальная статистика по дням</h3>
+						<div class="daily-stats-container" id="dailyStatsContainer">
+							<!-- Детальная статистика будет рендериться динамически -->
 						</div>
 					</div>
 				</div>
